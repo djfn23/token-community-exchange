@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Wallet, LogOut } from "lucide-react";
 import { blockchain } from "@/services/blockchain";
+import { useMoralis } from "@/contexts/MoralisContext";
 
 interface ConnectWalletProps {
   className?: string;
@@ -12,8 +13,12 @@ const ConnectWallet = ({ className }: ConnectWalletProps) => {
   const [isConnected, setIsConnected] = useState(false);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const moralis = useMoralis();
 
   useEffect(() => {
+    // Set the Moralis context in the blockchain service
+    blockchain.setMoralisContext(moralis);
+    
     // Vérifier si un wallet est déjà connecté
     const checkWalletConnection = () => {
       const connected = blockchain.isWalletConnected();
@@ -23,8 +28,10 @@ const ConnectWallet = ({ className }: ConnectWalletProps) => {
       }
     };
     
-    checkWalletConnection();
-  }, []);
+    if (moralis.isInitialized) {
+      checkWalletConnection();
+    }
+  }, [moralis, moralis.isInitialized, moralis.isAuthenticated]);
 
   const handleConnect = async () => {
     setLoading(true);
@@ -40,8 +47,8 @@ const ConnectWallet = ({ className }: ConnectWalletProps) => {
     }
   };
 
-  const handleDisconnect = () => {
-    blockchain.disconnectWallet();
+  const handleDisconnect = async () => {
+    await blockchain.disconnectWallet();
     setIsConnected(false);
     setWalletAddress(null);
   };
@@ -71,7 +78,7 @@ const ConnectWallet = ({ className }: ConnectWalletProps) => {
         <Button 
           variant="outline"
           onClick={handleConnect}
-          disabled={loading}
+          disabled={loading || !moralis.isInitialized}
           className="flex items-center gap-2 border-token hover:text-token hover:border-token"
         >
           <Wallet className="h-4 w-4" />

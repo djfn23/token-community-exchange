@@ -1,16 +1,19 @@
 
 import { toast } from "@/hooks/use-toast";
+import { useMoralis } from "@/contexts/MoralisContext";
+import Moralis from "moralis";
+import { ethers } from "ethers";
 
 /**
- * Service pour interagir avec la blockchain TokenChain (VeegoxChain)
- * Ce service offre une interface pour communiquer avec le nœud blockchain
+ * Service pour interagir avec la blockchain via Moralis
+ * Ce service offre une interface pour communiquer avec différentes blockchains
  */
 export class BlockchainService {
   private static instance: BlockchainService;
-  private nodeUrl: string = "http://127.0.0.1:9933";
-  private wsUrl: string = "ws://127.0.0.1:9944";
   private connected: boolean = false;
   private wallet: string | null = null;
+  private provider: ethers.providers.Web3Provider | null = null;
+  private moralisContext: ReturnType<typeof useMoralis> | null = null;
 
   private constructor() {
     // Singleton pattern
@@ -24,18 +27,31 @@ export class BlockchainService {
   }
 
   /**
+   * Set the Moralis context to be used by the service
+   */
+  public setMoralisContext(context: ReturnType<typeof useMoralis>): void {
+    this.moralisContext = context;
+    this.provider = context.getProvider();
+    this.connected = context.isInitialized;
+  }
+
+  /**
    * Tente une connexion au nœud blockchain
    * @returns Promise<boolean> - true si la connexion est établie
    */
   public async connect(): Promise<boolean> {
     try {
-      // Dans une implémentation réelle, utiliser polkadot.js ou ethers.js
-      // Simulation de connexion réussie pour le prototype
+      // Check if Moralis is initialized
+      if (!this.moralisContext || !this.moralisContext.isInitialized) {
+        console.error("Moralis context not set or not initialized");
+        return false;
+      }
+
       this.connected = true;
       
       toast({
         title: "Blockchain connectée",
-        description: "Connexion à VeegoxChain établie avec succès",
+        description: "Connexion à Ethereum établie avec succès",
       });
       
       return true;
@@ -44,7 +60,7 @@ export class BlockchainService {
       
       toast({
         title: "Erreur de connexion",
-        description: "Impossible de se connecter à VeegoxChain",
+        description: "Impossible de se connecter à la blockchain",
         variant: "destructive",
       });
       
@@ -54,24 +70,27 @@ export class BlockchainService {
 
   /**
    * Connecte un portefeuille à la blockchain
-   * @param address Adresse du portefeuille à connecter (optionnel)
    * @returns Promise<string> - L'adresse du portefeuille connecté
    */
-  public async connectWallet(address?: string): Promise<string> {
+  public async connectWallet(): Promise<string> {
     try {
-      // Dans une implémentation réelle, ceci lancerait un popup pour connecter un wallet
-      // et obtiendrait une adresse réelle
+      if (!this.moralisContext) {
+        throw new Error("Moralis context not set");
+      }
+
+      const address = await this.moralisContext.authenticate();
+      if (!address) {
+        throw new Error("Failed to authenticate with wallet");
+      }
       
-      // Génération d'une adresse simulée si aucune n'est fournie
-      const walletAddress = address || `vx${Math.random().toString(36).substring(2, 12)}`;
-      this.wallet = walletAddress;
+      this.wallet = address;
       
       toast({
         title: "Portefeuille connecté",
-        description: `Adresse: ${walletAddress.substring(0, 6)}...${walletAddress.substring(walletAddress.length - 4)}`,
+        description: `Adresse: ${address.substring(0, 6)}...${address.substring(address.length - 4)}`,
       });
       
-      return walletAddress;
+      return address;
     } catch (error) {
       console.error("Erreur lors de la connexion du wallet:", error);
       
@@ -88,13 +107,20 @@ export class BlockchainService {
   /**
    * Déconnecte le portefeuille
    */
-  public disconnectWallet(): void {
-    this.wallet = null;
-    
-    toast({
-      title: "Portefeuille déconnecté",
-      description: "Votre portefeuille a été déconnecté avec succès",
-    });
+  public async disconnectWallet(): Promise<void> {
+    try {
+      if (this.moralisContext) {
+        await this.moralisContext.logout();
+      }
+      this.wallet = null;
+      
+      toast({
+        title: "Portefeuille déconnecté",
+        description: "Votre portefeuille a été déconnecté avec succès",
+      });
+    } catch (error) {
+      console.error("Error disconnecting wallet:", error);
+    }
   }
 
   /**
@@ -102,7 +128,7 @@ export class BlockchainService {
    * @returns boolean - true si un wallet est connecté
    */
   public isWalletConnected(): boolean {
-    return this.wallet !== null;
+    return this.wallet !== null && (this.moralisContext?.isAuthenticated || false);
   }
 
   /**
@@ -123,17 +149,41 @@ export class BlockchainService {
     nodeName: string;
     networkId: string;
   }> {
-    if (!this.connected) {
-      await this.connect();
+    try {
+      if (!this.connected) {
+        await this.connect();
+      }
+      
+      let latestBlock = 0;
+      let networkId = "unknown";
+      
+      if (this.provider) {
+        try {
+          const blockNumber = await this.provider.getBlockNumber();
+          latestBlock = blockNumber;
+          
+          const network = await this.provider.getNetwork();
+          networkId = network.name !== "unknown" ? network.name : `chain-${network.chainId}`;
+        } catch (error) {
+          console.error("Error getting blockchain status:", error);
+        }
+      }
+      
+      return {
+        connected: this.connected,
+        latestBlock,
+        nodeName: "Ethereum Node",
+        networkId,
+      };
+    } catch (error) {
+      console.error("Error getting chain status:", error);
+      return {
+        connected: false,
+        latestBlock: 0,
+        nodeName: "Disconnected",
+        networkId: "unknown",
+      };
     }
-    
-    // Données simulées pour le prototype
-    return {
-      connected: this.connected,
-      latestBlock: Math.floor(Date.now() / 10000),
-      nodeName: "VeegoxChain Node",
-      networkId: "veegox-testnet-1",
-    };
   }
 
   /**
@@ -142,11 +192,14 @@ export class BlockchainService {
    * @returns Promise<string> - Le solde formatté
    */
   public async getAccountBalance(address: string): Promise<string> {
-    if (!address) return "0.00";
+    if (!address || !this.moralisContext) return "0.00";
     
-    // Données simulées pour le prototype
-    const randomBalance = (Math.random() * 100).toFixed(2);
-    return randomBalance;
+    try {
+      return await this.moralisContext.getBalance(address);
+    } catch (error) {
+      console.error("Error getting account balance:", error);
+      return "0.00";
+    }
   }
 
   /**
@@ -154,49 +207,48 @@ export class BlockchainService {
    * @returns Promise<Array> - Liste des transactions
    */
   public async getTransactionHistory(): Promise<any[]> {
-    // Simulation de délai réseau
-    await new Promise(resolve => setTimeout(resolve, 800));
+    if (!this.wallet || !this.moralisContext) {
+      return [];
+    }
     
-    // Données simulées pour le prototype
-    const now = new Date();
-    const transactions = [
-      {
-        id: "tx1",
-        type: 'swap',
-        fromToken: 'NEXUS',
-        toToken: 'NEXFINANCE',
-        amount: '25.00',
-        timestamp: new Date(now.getTime() - 1000 * 60 * 15), // 15 minutes ago
-        status: 'completed'
-      },
-      {
-        id: "tx2",
-        type: 'transfer',
-        fromToken: 'DAO',
-        amount: '10.50',
-        timestamp: new Date(now.getTime() - 1000 * 60 * 60 * 2), // 2 hours ago
-        status: 'completed'
-      },
-      {
-        id: "tx3",
-        type: 'swap',
-        fromToken: 'NEXFINANCE',
-        toToken: 'DAO',
-        amount: '15.75',
-        timestamp: new Date(now.getTime() - 1000 * 60 * 60 * 24), // 1 day ago
-        status: 'failed'
-      },
-      {
-        id: "tx4",
-        type: 'stake',
-        fromToken: 'NEXUS',
-        amount: '50.00',
-        timestamp: new Date(now.getTime() - 1000 * 60 * 60 * 24 * 2), // 2 days ago
-        status: 'completed'
-      }
-    ];
+    try {
+      const txs = await this.moralisContext.getTransactionsByWallet(this.wallet);
+      
+      // Transform Moralis transaction format to our app format
+      return txs.map((tx: any) => {
+        const isOutgoing = tx.from_address.toLowerCase() === this.wallet?.toLowerCase();
+        
+        return {
+          id: tx.hash,
+          type: isOutgoing ? 'transfer' : 'receive',
+          fromToken: tx.value ? 'ETH' : 'TOKEN',
+          toToken: undefined,
+          amount: ethers.utils.formatEther(tx.value || '0'),
+          timestamp: new Date(tx.block_timestamp),
+          status: tx.receipt_status === '1' ? 'completed' : 'failed',
+        };
+      });
+    } catch (error) {
+      console.error("Error getting transaction history:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Récupère les tokens détenus par l'utilisateur
+   * @returns Promise<Array> - Liste des tokens
+   */
+  public async getUserTokens(): Promise<any[]> {
+    if (!this.wallet || !this.moralisContext) {
+      return [];
+    }
     
-    return transactions;
+    try {
+      return await this.moralisContext.getTokenBalances(this.wallet);
+    } catch (error) {
+      console.error("Error getting user tokens:", error);
+      return [];
+    }
   }
 
   /**
@@ -208,6 +260,7 @@ export class BlockchainService {
    */
   public async swapTokens(fromToken: string, toToken: string, amount: string): Promise<boolean> {
     try {
+      // Dans une implémentation réelle avec Moralis/1inch, nous utiliserions une DEX API
       console.log(`Swap: ${amount} ${fromToken} -> ${toToken}`);
       
       // Simulation d'un délai de traitement blockchain

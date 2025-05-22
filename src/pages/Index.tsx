@@ -12,6 +12,7 @@ import Footer from "@/components/Footer";
 import BlockchainStatus from "@/components/BlockchainStatus";
 import { useToast } from "@/hooks/use-toast";
 import { blockchain } from "@/services/blockchain";
+import { useMoralis } from "@/contexts/MoralisContext";
 
 // Mock data for price chart
 const priceChartData = [
@@ -26,21 +27,27 @@ const priceChartData = [
 
 const Index = () => {
   const { toast } = useToast();
+  const moralis = useMoralis();
 
   useEffect(() => {
     document.title = "TokenTrader - Community Token Exchange";
     
-    // Connexion à la blockchain au chargement de la page
-    const connectToBlockchain = async () => {
-      try {
-        await blockchain.connect();
-      } catch (error) {
-        console.error("Erreur lors de la connexion à la blockchain:", error);
-      }
-    };
-    
-    connectToBlockchain();
-  }, []);
+    // Set Moralis context in blockchain service when component mounts
+    if (moralis.isInitialized) {
+      blockchain.setMoralisContext(moralis);
+      
+      // Connexion à la blockchain au chargement de la page
+      const connectToBlockchain = async () => {
+        try {
+          await blockchain.connect();
+        } catch (error) {
+          console.error("Erreur lors de la connexion à la blockchain:", error);
+        }
+      };
+      
+      connectToBlockchain();
+    }
+  }, [moralis.isInitialized]);
 
   return (
     <div className="min-h-screen flex flex-col">

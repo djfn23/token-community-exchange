@@ -2,10 +2,11 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { blockchain } from "@/services/blockchain";
+import { useMoralis } from "@/contexts/MoralisContext";
 
 interface Transaction {
   id: string;
-  type: 'swap' | 'transfer' | 'stake';
+  type: 'swap' | 'transfer' | 'receive' | 'stake';
   fromToken: string;
   toToken?: string;
   amount: string;
@@ -16,13 +17,16 @@ interface Transaction {
 const TransactionHistory = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const moralis = useMoralis();
 
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
-        // In a real implementation, this would fetch real transaction history
-        const txHistory = await blockchain.getTransactionHistory();
-        setTransactions(txHistory);
+        if (moralis.isInitialized && moralis.isAuthenticated) {
+          setLoading(true);
+          const txHistory = await blockchain.getTransactionHistory();
+          setTransactions(txHistory);
+        }
       } catch (error) {
         console.error("Erreur lors de la récupération de l'historique des transactions:", error);
       } finally {
@@ -30,8 +34,12 @@ const TransactionHistory = () => {
       }
     };
 
-    fetchTransactions();
-  }, []);
+    if (moralis.isInitialized && moralis.isAuthenticated) {
+      fetchTransactions();
+    } else {
+      setLoading(false);
+    }
+  }, [moralis.isInitialized, moralis.isAuthenticated]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -46,6 +54,7 @@ const TransactionHistory = () => {
     switch (type) {
       case 'swap': return '↔️';
       case 'transfer': return '→';
+      case 'receive': return '←';
       case 'stake': return '🔒';
       default: return '•';
     }
@@ -59,6 +68,21 @@ const TransactionHistory = () => {
       minute: '2-digit' 
     }).format(date);
   };
+
+  if (!moralis.isAuthenticated) {
+    return (
+      <Card className="token-card">
+        <CardHeader>
+          <CardTitle className="text-lg">Transactions récentes</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="py-6 text-center text-muted-foreground">
+            Connectez votre wallet pour voir vos transactions
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="token-card">
