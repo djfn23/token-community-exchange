@@ -7,33 +7,47 @@ import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Logo from "./Logo";
 import { useToast } from "@/hooks/use-toast";
+import { blockchain } from "@/services/blockchain";
 
 const SwapCard = () => {
   const [fromToken, setFromToken] = useState("NEXUS");
   const [toToken, setToToken] = useState("NEXFINANCE");
   const [fromAmount, setFromAmount] = useState("");
   const [toAmount, setToAmount] = useState("");
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   
-  const handleSwap = () => {
+  const handleSwap = async () => {
     if (!fromAmount) {
       toast({
-        title: "Error",
-        description: "Please enter an amount to swap.",
+        title: "Erreur",
+        description: "Veuillez entrer un montant à échanger.",
         variant: "destructive"
       });
       return;
     }
     
-    // In a real implementation, this would call a blockchain transaction
-    toast({
-      title: "Swap submitted",
-      description: `Swapping ${fromAmount} ${fromToken} to ${toToken}...`,
-    });
+    setLoading(true);
     
-    // Reset fields
-    setFromAmount("");
-    setToAmount("");
+    try {
+      // Appel au service blockchain pour effectuer le swap
+      const success = await blockchain.swapTokens(fromToken, toToken, fromAmount);
+      
+      if (success) {
+        // Reset des champs en cas de succès
+        setFromAmount("");
+        setToAmount("");
+      }
+    } catch (error) {
+      console.error("Erreur lors du swap:", error);
+      toast({
+        title: "Erreur de transaction",
+        description: "Une erreur inattendue est survenue",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
   
   // Calculate estimated amount when from amount changes
@@ -51,7 +65,7 @@ const SwapCard = () => {
       
       <div className="space-y-4">
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-muted-foreground mb-1">From</label>
+          <label className="block text-sm font-medium text-muted-foreground mb-1">De</label>
           <div className="flex gap-2">
             <TokenSelect
               value={fromToken}
@@ -90,7 +104,7 @@ const SwapCard = () => {
         </div>
         
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-muted-foreground mb-1">To</label>
+          <label className="block text-sm font-medium text-muted-foreground mb-1">Vers</label>
           <div className="flex gap-2">
             <TokenSelect
               value={toToken}
@@ -114,9 +128,14 @@ const SwapCard = () => {
         <Button 
           className="w-full bg-token hover:bg-token-hover text-white font-medium mt-4"
           onClick={handleSwap}
+          disabled={loading}
         >
-          Swap
+          {loading ? "Transaction en cours..." : "Swap"}
         </Button>
+        
+        <div className="text-xs text-center text-muted-foreground mt-2">
+          Powered by VeegoxChain
+        </div>
       </div>
     </div>
   );
@@ -126,6 +145,23 @@ interface TokenOptionProps {
   value: string;
   logo: JSX.Element;
 }
+
+// Make sure this is defined before it's used
+const TokenLogo = ({ symbol }: { symbol: string }) => {
+  const bgColors: Record<string, string> = {
+    NEX: "bg-blue-500",
+    DAO: "bg-green-600"
+  };
+  
+  return (
+    <div className={cn(
+      "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold",
+      bgColors[symbol] || "bg-token"
+    )}>
+      {symbol.substring(0, 1)}
+    </div>
+  );
+};
 
 interface TokenSelectProps {
   value: string;
@@ -154,22 +190,6 @@ const TokenSelect = ({ value, onChange, options }: TokenSelectProps) => {
         ))}
       </SelectContent>
     </Select>
-  );
-};
-
-const TokenLogo = ({ symbol }: { symbol: string }) => {
-  const bgColors: Record<string, string> = {
-    NEX: "bg-blue-500",
-    DAO: "bg-green-600"
-  };
-  
-  return (
-    <div className={cn(
-      "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold",
-      bgColors[symbol] || "bg-token"
-    )}>
-      {symbol.substring(0, 1)}
-    </div>
   );
 };
 

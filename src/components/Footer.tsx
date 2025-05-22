@@ -1,50 +1,64 @@
 
 import Logo from "./Logo";
+import { Github, Twitter } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Footer = () => {
   return (
-    <footer className="border-t border-token-muted/20 py-8 mt-10">
+    <footer className="border-t border-token-muted/20 py-6 mt-10">
       <div className="container mx-auto px-4">
         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex flex-col items-center md:items-start">
-            <Logo withText size="sm" />
-            <p className="text-sm text-muted-foreground mt-2">
-              Trade community tokens on VeegoxChain
-            </p>
+          <Logo withText size="sm" />
+          
+          <div className="flex flex-wrap justify-center gap-6 text-sm">
+            <Link 
+              to="/blockchain"
+              className="text-muted-foreground hover:text-token transition-colors"
+            >
+              VeegoxChain Explorer
+            </Link>
+            <Link 
+              to="#"
+              className="text-muted-foreground hover:text-token transition-colors"
+            >
+              Documentation
+            </Link>
+            <Link 
+              to="#"
+              className="text-muted-foreground hover:text-token transition-colors"
+            >
+              API
+            </Link>
+            <Link 
+              to="#"
+              className="text-muted-foreground hover:text-token transition-colors"
+            >
+              À propos
+            </Link>
           </div>
           
-          <div className="flex gap-8">
-            <div className="flex flex-col gap-2">
-              <h4 className="text-sm font-semibold mb-1">Platform</h4>
-              <Link to="/trade" className="text-sm text-muted-foreground hover:text-token transition-colors">
-                Trade
-              </Link>
-              <Link to="/communities" className="text-sm text-muted-foreground hover:text-token transition-colors">
-                Communities
-              </Link>
-              <Link to="/create" className="text-sm text-muted-foreground hover:text-token transition-colors">
-                Create Token
-              </Link>
-            </div>
-            
-            <div className="flex flex-col gap-2">
-              <h4 className="text-sm font-semibold mb-1">Resources</h4>
-              <Link to="/docs" className="text-sm text-muted-foreground hover:text-token transition-colors">
-                Documentation
-              </Link>
-              <Link to="/faq" className="text-sm text-muted-foreground hover:text-token transition-colors">
-                FAQ
-              </Link>
-              <Link to="/governance" className="text-sm text-muted-foreground hover:text-token transition-colors">
-                Governance
-              </Link>
-            </div>
+          <div className="flex gap-4">
+            <a 
+              href="https://github.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-muted-foreground hover:text-token transition-colors"
+            >
+              <Github className="h-5 w-5" />
+            </a>
+            <a 
+              href="https://twitter.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-muted-foreground hover:text-token transition-colors"
+            >
+              <Twitter className="h-5 w-5" />
+            </a>
           </div>
         </div>
         
-        <div className="border-t border-token-muted/20 mt-8 pt-6 text-center text-sm text-muted-foreground">
-          <p>© 2025 TokenTrader. All rights reserved.</p>
+        <div className="mt-6 text-center text-xs text-muted-foreground">
+          &copy; {new Date().getFullYear()} TokenTrader. Propulsé par VeegoxChain.
         </div>
       </div>
     </footer>

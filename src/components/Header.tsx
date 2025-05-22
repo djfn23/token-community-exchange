@@ -5,6 +5,7 @@ import Logo from "./Logo";
 import UserAvatar from "./UserAvatar";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import BlockchainStatus from "./BlockchainStatus";
 
 const Header = () => {
   const [isConnected, setIsConnected] = useState(false);
@@ -14,8 +15,8 @@ const Header = () => {
     // In a real implementation, this would connect to a Web3 wallet
     setIsConnected(true);
     toast({
-      title: "Wallet connected",
-      description: "Your wallet has been successfully connected.",
+      title: "Wallet connecté",
+      description: "Votre portefeuille a été connecté avec succès.",
     });
   };
   
@@ -50,6 +51,8 @@ const Header = () => {
         </div>
         
         <div className="flex items-center gap-4">
+          <BlockchainStatus className="hidden md:flex" />
+          
           {isConnected ? (
             <Link to="/profile" className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-token-muted/10">
               <UserAvatar name="Alex" />
