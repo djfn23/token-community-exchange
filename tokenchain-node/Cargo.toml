@@ -1,0 +1,11 @@
+[package]
+name = "tokenchain-node"
+version = "0.1.0"
+edition = "2021"
+authors = ["TokenTrader Team"]
+description = "TokenChain: blockchain communautaire pour TokenTrader, basée sur Substrate."
+
+[dependencies]
+substrate = { version = "4.0.0-dev", optional = true }
+serde = { version = "1.0", features = ["derive"] }
+log = "0.4"
