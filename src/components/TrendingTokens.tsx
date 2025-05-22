@@ -13,6 +13,22 @@ interface Token {
   logo: React.ReactNode;
 }
 
+// Define TokenCircle component before using it
+interface TokenCircleProps {
+  symbol: string;
+  color: string;
+}
+
+const TokenCircle = ({ symbol, color }: TokenCircleProps) => (
+  <div className={cn(
+    "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white",
+    color
+  )}>
+    {symbol}
+  </div>
+);
+
+// Now use TokenCircle in the data array
 const trendingTokens: Token[] = [
   {
     id: "1",
@@ -110,19 +126,5 @@ const TrendingTokens = () => {
     </div>
   );
 };
-
-interface TokenCircleProps {
-  symbol: string;
-  color: string;
-}
-
-const TokenCircle = ({ symbol, color }: TokenCircleProps) => (
-  <div className={cn(
-    "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white",
-    color
-  )}>
-    {symbol}
-  </div>
-);
 
 export default TrendingTokens;
