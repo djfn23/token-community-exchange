@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,20 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// TokenTrader specific colors
+				token: {
+					DEFAULT: '#00C2CB',
+					foreground: '#FFFFFF',
+					light: '#3CDEE6',
+					dark: '#009DA5',
+					hover: '#00D6E0',
+					background: '#0A1929',
+					card: '#0F2A45',
+					'card-dark': '#081724',
+					muted: '#3A5A78',
+					positive: '#00CB91',
+					negative: '#FF4961'
 				}
 			},
 			borderRadius: {
@@ -84,11 +99,34 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'pulse-soft': {
+					'0%, 100%': { opacity: '1' },
+					'50%': { opacity: '0.7' },
+				},
+				'float': {
+					'0%, 100%': { transform: 'translateY(0)' },
+					'50%': { transform: 'translateY(-10px)' },
+				},
+				'network-glow': {
+					'0%, 100%': { opacity: '0.3' },
+					'50%': { opacity: '0.8' },
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'pulse-soft': 'pulse-soft 4s ease-in-out infinite',
+				'float': 'float 6s ease-in-out infinite',
+				'network-glow': 'network-glow 8s ease-in-out infinite',
+			},
+			fontFamily: {
+				sans: ['Inter', 'sans-serif'],
+				mono: ['JetBrains Mono', 'monospace'],
+			},
+			backgroundImage: {
+				'network-pattern': "url('/network-background.svg')",
+				'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
 			}
 		}
 	},
