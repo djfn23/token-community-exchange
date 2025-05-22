@@ -10,6 +10,7 @@ export class BlockchainService {
   private nodeUrl: string = "http://127.0.0.1:9933";
   private wsUrl: string = "ws://127.0.0.1:9944";
   private connected: boolean = false;
+  private wallet: string | null = null;
 
   private constructor() {
     // Singleton pattern
@@ -52,6 +53,67 @@ export class BlockchainService {
   }
 
   /**
+   * Connecte un portefeuille à la blockchain
+   * @param address Adresse du portefeuille à connecter (optionnel)
+   * @returns Promise<string> - L'adresse du portefeuille connecté
+   */
+  public async connectWallet(address?: string): Promise<string> {
+    try {
+      // Dans une implémentation réelle, ceci lancerait un popup pour connecter un wallet
+      // et obtiendrait une adresse réelle
+      
+      // Génération d'une adresse simulée si aucune n'est fournie
+      const walletAddress = address || `vx${Math.random().toString(36).substring(2, 12)}`;
+      this.wallet = walletAddress;
+      
+      toast({
+        title: "Portefeuille connecté",
+        description: `Adresse: ${walletAddress.substring(0, 6)}...${walletAddress.substring(walletAddress.length - 4)}`,
+      });
+      
+      return walletAddress;
+    } catch (error) {
+      console.error("Erreur lors de la connexion du wallet:", error);
+      
+      toast({
+        title: "Erreur de connexion",
+        description: "Impossible de connecter le portefeuille",
+        variant: "destructive",
+      });
+      
+      throw error;
+    }
+  }
+
+  /**
+   * Déconnecte le portefeuille
+   */
+  public disconnectWallet(): void {
+    this.wallet = null;
+    
+    toast({
+      title: "Portefeuille déconnecté",
+      description: "Votre portefeuille a été déconnecté avec succès",
+    });
+  }
+
+  /**
+   * Vérifie si un wallet est connecté
+   * @returns boolean - true si un wallet est connecté
+   */
+  public isWalletConnected(): boolean {
+    return this.wallet !== null;
+  }
+
+  /**
+   * Récupère l'adresse du wallet connecté
+   * @returns string | null - l'adresse du wallet ou null si aucun wallet n'est connecté
+   */
+  public getWalletAddress(): string | null {
+    return this.wallet;
+  }
+
+  /**
    * Vérifie l'état de la blockchain
    * @returns Objet avec les informations d'état
    */
@@ -85,6 +147,56 @@ export class BlockchainService {
     // Données simulées pour le prototype
     const randomBalance = (Math.random() * 100).toFixed(2);
     return randomBalance;
+  }
+
+  /**
+   * Récupère l'historique des transactions
+   * @returns Promise<Array> - Liste des transactions
+   */
+  public async getTransactionHistory(): Promise<any[]> {
+    // Simulation de délai réseau
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    // Données simulées pour le prototype
+    const now = new Date();
+    const transactions = [
+      {
+        id: "tx1",
+        type: 'swap',
+        fromToken: 'NEXUS',
+        toToken: 'NEXFINANCE',
+        amount: '25.00',
+        timestamp: new Date(now.getTime() - 1000 * 60 * 15), // 15 minutes ago
+        status: 'completed'
+      },
+      {
+        id: "tx2",
+        type: 'transfer',
+        fromToken: 'DAO',
+        amount: '10.50',
+        timestamp: new Date(now.getTime() - 1000 * 60 * 60 * 2), // 2 hours ago
+        status: 'completed'
+      },
+      {
+        id: "tx3",
+        type: 'swap',
+        fromToken: 'NEXFINANCE',
+        toToken: 'DAO',
+        amount: '15.75',
+        timestamp: new Date(now.getTime() - 1000 * 60 * 60 * 24), // 1 day ago
+        status: 'failed'
+      },
+      {
+        id: "tx4",
+        type: 'stake',
+        fromToken: 'NEXUS',
+        amount: '50.00',
+        timestamp: new Date(now.getTime() - 1000 * 60 * 60 * 24 * 2), // 2 days ago
+        status: 'completed'
+      }
+    ];
+    
+    return transactions;
   }
 
   /**

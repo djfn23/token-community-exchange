@@ -15,6 +15,7 @@ tokio = { version = "1.28", features = ["full"] }
 jsonrpc-core = "18.0.0"
 jsonrpc-http-server = "18.0.0"
 jsonrpc-ws-server = "18.0.0"
+rand = "0.8.5"
 
 [features]
 default = []

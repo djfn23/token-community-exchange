@@ -7,6 +7,7 @@ import PriceChart from "@/components/PriceChart";
 import TrendingTokens from "@/components/TrendingTokens";
 import CommunityCard from "@/components/CommunityCard";
 import ProfileCard from "@/components/ProfileCard";
+import TransactionHistory from "@/components/TransactionHistory";
 import Footer from "@/components/Footer";
 import BlockchainStatus from "@/components/BlockchainStatus";
 import { useToast } from "@/hooks/use-toast";
@@ -67,6 +68,7 @@ const Index = () => {
           {/* Middle column */}
           <div className="lg:col-span-2 space-y-6">
             <TrendingTokens />
+            <TransactionHistory />
           </div>
           
           {/* Right column */}

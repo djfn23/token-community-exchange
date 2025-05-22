@@ -6,6 +6,7 @@ import UserAvatar from "./UserAvatar";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import BlockchainStatus from "./BlockchainStatus";
+import ConnectWallet from "./ConnectWallet";
 
 const Header = () => {
   const [isConnected, setIsConnected] = useState(false);
@@ -30,10 +31,16 @@ const Header = () => {
           
           <nav className="hidden md:flex items-center gap-6">
             <Link 
-              to="/trade" 
+              to="/" 
               className="text-sm font-medium hover:text-token transition-colors"
             >
-              Trade
+              Home
+            </Link>
+            <Link 
+              to="/blockchain" 
+              className="text-sm font-medium hover:text-token transition-colors"
+            >
+              Explorer
             </Link>
             <Link 
               to="/communities" 
@@ -41,31 +48,18 @@ const Header = () => {
             >
               Communities
             </Link>
-            <Link 
-              to="/create" 
-              className="text-sm font-medium hover:text-token transition-colors"
-            >
-              Create
-            </Link>
           </nav>
         </div>
         
         <div className="flex items-center gap-4">
           <BlockchainStatus className="hidden md:flex" />
+          <ConnectWallet />
           
-          {isConnected ? (
+          {isConnected && (
             <Link to="/profile" className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-token-muted/10">
               <UserAvatar name="Alex" />
               <span className="hidden md:inline">Alex</span>
             </Link>
-          ) : (
-            <Button 
-              variant="default" 
-              className="bg-token hover:bg-token-hover text-token-foreground"
-              onClick={handleConnect}
-            >
-              Connect Wallet
-            </Button>
           )}
         </div>
       </div>
