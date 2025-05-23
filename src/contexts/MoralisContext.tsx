@@ -275,13 +275,15 @@ export const MoralisProvider = ({ children }: MoralisProviderProps) => {
   };
 
   const getEvmChain = (chain: string) => {
+    // Utiliser directement les constantes de chaîne au lieu d'utiliser EvmChainResolver
     const chains: Record<string, any> = {
-      "eth": EvmChainResolver.ETHEREUM,
-      "polygon": EvmChainResolver.POLYGON,
-      "bsc": EvmChainResolver.BSC,
-      "avalanche": EvmChainResolver.AVALANCHE,
+      "eth": EvmChain.ETHEREUM,
+      "polygon": EvmChain.POLYGON,
+      "bsc": EvmChain.BSC,
+      "avalanche": EvmChain.AVALANCHE,
+      // Ajouter d'autres chaînes au besoin
     };
-    return chains[chain] || EvmChainResolver.ETHEREUM;
+    return chains[chain] || EvmChain.ETHEREUM;
   };
 
   const getProvider = () => provider;
