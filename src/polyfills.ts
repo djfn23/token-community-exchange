@@ -4,6 +4,8 @@
  * Node.js dans un environnement navigateur
  */
 
+import { Buffer as buffer } from 'buffer';
+
 // Polyfill pour la variable globale 'global'
 window.global = window;
 
@@ -15,4 +17,4 @@ window.process.env = window.process.env || {};
 
 // Polyfill pour Buffer
 // @ts-ignore
-window.Buffer = window.Buffer || require('buffer').Buffer;
+window.Buffer = window.Buffer || buffer;
