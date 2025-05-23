@@ -1,8 +1,9 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import Moralis from "moralis";
-import { EvmChain } from "@moralisweb3/next";
+import { EvmChainResolver, EvmChain } from "@moralisweb3/common-evm-utils";
 import { ethers } from "ethers";
+import { moralisService } from "@/services/moralis";
 
 interface MoralisContextType {
   isInitialized: boolean;
@@ -39,8 +40,9 @@ export const MoralisProvider = ({ children }: MoralisProviderProps) => {
     const initMoralis = async () => {
       try {
         if (!Moralis.Core.isStarted) {
+          const apiKey = await moralisService.getApiKey();
           await Moralis.start({
-            apiKey: "FETCH_FROM_SUPABASE",
+            apiKey,
           });
           console.log("Moralis initialized successfully");
           setIsInitialized(true);
@@ -128,12 +130,12 @@ export const MoralisProvider = ({ children }: MoralisProviderProps) => {
 
   const getEvmChain = (chain: string) => {
     const chains: Record<string, any> = {
-      "eth": EvmChain.ETHEREUM,
-      "polygon": EvmChain.POLYGON,
-      "bsc": EvmChain.BSC,
-      "avalanche": EvmChain.AVALANCHE,
+      "eth": EvmChainResolver.ETHEREUM,
+      "polygon": EvmChainResolver.POLYGON,
+      "bsc": EvmChainResolver.BSC,
+      "avalanche": EvmChainResolver.AVALANCHE,
     };
-    return chains[chain] || EvmChain.ETHEREUM;
+    return chains[chain] || EvmChainResolver.ETHEREUM;
   };
 
   const getProvider = () => provider;
