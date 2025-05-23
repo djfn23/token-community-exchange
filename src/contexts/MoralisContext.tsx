@@ -4,6 +4,7 @@ import Moralis from "moralis";
 import { EvmChainResolver, EvmChain } from "@moralisweb3/common-evm-utils";
 import { ethers } from "ethers";
 import { moralisService } from "@/services/moralis";
+import { toast } from "@/hooks/use-toast";
 
 interface MoralisContextType {
   isInitialized: boolean;
@@ -15,6 +16,21 @@ interface MoralisContextType {
   getTransactionsByWallet: (address: string, chain?: string) => Promise<any[]>;
   getEvmChain: (chain: string) => any;
   getProvider: () => ethers.providers.Web3Provider | null;
+  // Nouvelles fonctionnalités
+  getNFTs: (address: string, chain?: string) => Promise<any[]>;
+  getNFTTransfers: (address: string, chain?: string) => Promise<any[]>;
+  getTokenPrice: (address: string, chain?: string) => Promise<any>;
+  runContractFunction: (params: ContractFunctionParams) => Promise<any>;
+  streamNFTTransfers: (address: string, callback: (data: any) => void) => () => void;
+  getSupportedChains: () => { id: string; name: string }[];
+}
+
+interface ContractFunctionParams {
+  contractAddress: string;
+  functionName: string;
+  abi: any[];
+  params?: any;
+  chain?: string;
 }
 
 const MoralisContext = createContext<MoralisContextType | null>(null);
@@ -49,6 +65,11 @@ export const MoralisProvider = ({ children }: MoralisProviderProps) => {
         }
       } catch (error) {
         console.error("Failed to initialize Moralis:", error);
+        toast({
+          title: "Erreur de connexion Moralis",
+          description: "Impossible d'initialiser le service blockchain",
+          variant: "destructive",
+        });
       }
     };
 
@@ -66,7 +87,11 @@ export const MoralisProvider = ({ children }: MoralisProviderProps) => {
 
   const authenticate = async (): Promise<string | null> => {
     if (!window.ethereum) {
-      console.error("MetaMask not installed");
+      toast({
+        title: "MetaMask non détecté",
+        description: "Veuillez installer MetaMask pour continuer",
+        variant: "destructive",
+      });
       return null;
     }
 
@@ -76,15 +101,30 @@ export const MoralisProvider = ({ children }: MoralisProviderProps) => {
       const signer = provider.getSigner();
       const address = await signer.getAddress();
       setIsAuthenticated(true);
+      
+      toast({
+        title: "Portefeuille connecté",
+        description: `Connecté avec l'adresse ${address.substring(0, 6)}...${address.substring(address.length - 4)}`,
+      });
+      
       return address;
     } catch (error) {
       console.error("Authentication error:", error);
+      toast({
+        title: "Erreur d'authentification",
+        description: "Impossible de connecter le portefeuille",
+        variant: "destructive",
+      });
       return null;
     }
   };
 
   const logout = async (): Promise<void> => {
     setIsAuthenticated(false);
+    toast({
+      title: "Déconnexion réussie",
+      description: "Votre portefeuille a été déconnecté",
+    });
   };
 
   const getBalance = async (address: string, chain = "0x1"): Promise<string> => {
@@ -128,6 +168,112 @@ export const MoralisProvider = ({ children }: MoralisProviderProps) => {
     }
   };
 
+  // Nouvelle fonction: Récupérer les NFTs d'un portefeuille
+  const getNFTs = async (address: string, chain = "0x1"): Promise<any[]> => {
+    try {
+      const response = await Moralis.EvmApi.nft.getWalletNFTs({
+        address,
+        chain,
+      });
+      return response.raw.result;
+    } catch (error) {
+      console.error("Error getting NFTs:", error);
+      return [];
+    }
+  };
+
+  // Nouvelle fonction: Récupérer les transferts de NFTs
+  const getNFTTransfers = async (address: string, chain = "0x1"): Promise<any[]> => {
+    try {
+      const response = await Moralis.EvmApi.nft.getWalletNFTTransfers({
+        address,
+        chain,
+      });
+      return response.raw.result;
+    } catch (error) {
+      console.error("Error getting NFT transfers:", error);
+      return [];
+    }
+  };
+
+  // Nouvelle fonction: Obtenir le prix d'un token
+  const getTokenPrice = async (address: string, chain = "0x1"): Promise<any> => {
+    try {
+      const response = await Moralis.EvmApi.token.getTokenPrice({
+        address,
+        chain,
+      });
+      return response.raw;
+    } catch (error) {
+      console.error("Error getting token price:", error);
+      return null;
+    }
+  };
+
+  // Nouvelle fonction: Exécuter une fonction de contrat intelligent
+  const runContractFunction = async ({
+    contractAddress,
+    functionName,
+    abi,
+    params = {},
+    chain = "0x1"
+  }: ContractFunctionParams): Promise<any> => {
+    try {
+      const response = await Moralis.EvmApi.utils.runContractFunction({
+        address: contractAddress,
+        functionName,
+        abi,
+        params,
+        chain,
+      });
+      return response.raw;
+    } catch (error) {
+      console.error(`Error executing contract function ${functionName}:`, error);
+      throw error;
+    }
+  };
+
+  // Nouvelle fonction: Stream des transferts de NFT en temps réel
+  const streamNFTTransfers = (address: string, callback: (data: any) => void) => {
+    if (!isInitialized) {
+      console.error("Moralis not initialized");
+      return () => {};
+    }
+
+    // Setup a stream for NFT transfers
+    const stream = Moralis.Streams;
+    
+    // Cette fonction est simplifiée car l'API de streaming actuelle de Moralis 
+    // nécessite une configuration côté serveur
+    console.log(`Setting up stream for NFT transfers to/from ${address}`);
+    
+    // Dans une implémentation réelle, on utiliserait l'API Streams de Moralis
+    // ici, on simule avec un intervalle pour les démonstrations
+    const interval = setInterval(() => {
+      getNFTTransfers(address).then(transfers => {
+        if (transfers.length > 0) {
+          callback(transfers[0]); // Envoyer le dernier transfert
+        }
+      });
+    }, 30000); // Vérifier toutes les 30 secondes
+    
+    // Retourner une fonction de nettoyage
+    return () => clearInterval(interval);
+  };
+
+  // Nouvelle fonction: Obtenir les chaînes supportées
+  const getSupportedChains = () => {
+    return [
+      { id: "0x1", name: "Ethereum" },
+      { id: "0x89", name: "Polygon" },
+      { id: "0x38", name: "BNB Smart Chain" },
+      { id: "0xa86a", name: "Avalanche" },
+      { id: "0xa", name: "Optimism" },
+      { id: "0xa4b1", name: "Arbitrum" },
+      { id: "0x2105", name: "Base" }
+    ];
+  };
+
   const getEvmChain = (chain: string) => {
     const chains: Record<string, any> = {
       "eth": EvmChainResolver.ETHEREUM,
@@ -150,6 +296,13 @@ export const MoralisProvider = ({ children }: MoralisProviderProps) => {
     getTransactionsByWallet,
     getEvmChain,
     getProvider,
+    // Nouvelles fonctionnalités
+    getNFTs,
+    getNFTTransfers,
+    getTokenPrice,
+    runContractFunction,
+    streamNFTTransfers,
+    getSupportedChains,
   };
 
   return (

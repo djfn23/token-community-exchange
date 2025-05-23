@@ -4,6 +4,7 @@ import Logo from "./Logo";
 import UserAvatar from "./UserAvatar";
 import BlockchainStatus from "./BlockchainStatus";
 import ConnectWallet from "./ConnectWallet";
+import ChainSelector from "./ChainSelector";
 import { useMoralis } from "@/contexts/MoralisContext";
 import { blockchain } from "@/services/blockchain";
 import { useEffect } from "react";
@@ -48,6 +49,7 @@ const Header = () => {
         </div>
         
         <div className="flex items-center gap-4">
+          <ChainSelector className="hidden md:block" />
           <BlockchainStatus className="hidden md:flex" />
           <ConnectWallet />
           

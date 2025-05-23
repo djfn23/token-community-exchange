@@ -14,6 +14,8 @@ export class BlockchainService {
   private wallet: string | null = null;
   private provider: ethers.providers.Web3Provider | null = null;
   private moralisContext: ReturnType<typeof useMoralis> | null = null;
+  private nftListeners: Map<string, () => void> = new Map();
+  private selectedChain: string = "0x1"; // Default to Ethereum
 
   private constructor() {
     // Singleton pattern
@@ -85,6 +87,9 @@ export class BlockchainService {
       
       this.wallet = address;
       
+      // Démarrer l'écoute des transferts NFT pour ce portefeuille
+      this.startNFTTransferListener(address);
+      
       toast({
         title: "Portefeuille connecté",
         description: `Adresse: ${address.substring(0, 6)}...${address.substring(address.length - 4)}`,
@@ -112,6 +117,10 @@ export class BlockchainService {
       if (this.moralisContext) {
         await this.moralisContext.logout();
       }
+      
+      // Arrêter l'écoute des transferts NFT
+      this.stopNFTTransferListeners();
+      
       this.wallet = null;
       
       toast({
@@ -212,7 +221,7 @@ export class BlockchainService {
     }
     
     try {
-      const txs = await this.moralisContext.getTransactionsByWallet(this.wallet);
+      const txs = await this.moralisContext.getTransactionsByWallet(this.wallet, this.selectedChain);
       
       // Transform Moralis transaction format to our app format
       return txs.map((tx: any) => {
@@ -244,7 +253,7 @@ export class BlockchainService {
     }
     
     try {
-      return await this.moralisContext.getTokenBalances(this.wallet);
+      return await this.moralisContext.getTokenBalances(this.wallet, this.selectedChain);
     } catch (error) {
       console.error("Error getting user tokens:", error);
       return [];
@@ -294,6 +303,204 @@ export class BlockchainService {
       
       return false;
     }
+  }
+
+  /**
+   * Récupère les NFTs d'un portefeuille
+   * @param address Adresse du portefeuille (optionnel, utilise l'adresse connectée par défaut)
+   * @returns Promise<Array> - Liste des NFTs
+   */
+  public async getNFTs(address?: string): Promise<any[]> {
+    const walletAddress = address || this.wallet;
+    
+    if (!walletAddress || !this.moralisContext) {
+      return [];
+    }
+    
+    try {
+      const nfts = await this.moralisContext.getNFTs(walletAddress, this.selectedChain);
+      return this.formatNFTs(nfts);
+    } catch (error) {
+      console.error("Error getting NFTs:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Récupère les transferts de NFTs pour un portefeuille
+   * @param address Adresse du portefeuille (optionnel, utilise l'adresse connectée par défaut)
+   * @returns Promise<Array> - Liste des transferts de NFTs
+   */
+  public async getNFTTransfers(address?: string): Promise<any[]> {
+    const walletAddress = address || this.wallet;
+    
+    if (!walletAddress || !this.moralisContext) {
+      return [];
+    }
+    
+    try {
+      const transfers = await this.moralisContext.getNFTTransfers(walletAddress, this.selectedChain);
+      return transfers.map((transfer: any) => ({
+        id: transfer.transaction_hash,
+        tokenId: transfer.token_id,
+        contractAddress: transfer.token_address,
+        fromAddress: transfer.from_address,
+        toAddress: transfer.to_address,
+        timestamp: new Date(transfer.block_timestamp),
+        type: transfer.from_address.toLowerCase() === walletAddress.toLowerCase() ? 'sent' : 'received',
+      }));
+    } catch (error) {
+      console.error("Error getting NFT transfers:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Récupère le prix d'un token
+   * @param tokenAddress Adresse du contrat du token
+   * @returns Promise<Object> - Informations sur le prix
+   */
+  public async getTokenPrice(tokenAddress: string): Promise<any> {
+    if (!this.moralisContext) {
+      return null;
+    }
+    
+    try {
+      return await this.moralisContext.getTokenPrice(tokenAddress, this.selectedChain);
+    } catch (error) {
+      console.error("Error getting token price:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Exécute une fonction sur un contrat intelligent
+   * @param contractAddress Adresse du contrat
+   * @param functionName Nom de la fonction
+   * @param abi ABI du contrat
+   * @param params Paramètres de la fonction
+   * @returns Promise<any> - Résultat de l'exécution
+   */
+  public async executeContractFunction(
+    contractAddress: string,
+    functionName: string,
+    abi: any[],
+    params: any = {}
+  ): Promise<any> {
+    if (!this.moralisContext) {
+      throw new Error("Moralis context not set");
+    }
+    
+    try {
+      return await this.moralisContext.runContractFunction({
+        contractAddress,
+        functionName,
+        abi,
+        params,
+        chain: this.selectedChain
+      });
+    } catch (error) {
+      console.error(`Error executing contract function ${functionName}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Démarre l'écoute des transferts de NFT pour une adresse
+   * @param address Adresse du portefeuille
+   */
+  private startNFTTransferListener(address: string): void {
+    // Arrêter les listeners existants d'abord
+    this.stopNFTTransferListeners();
+    
+    if (!this.moralisContext) return;
+    
+    const cleanupFunc = this.moralisContext.streamNFTTransfers(address, (data) => {
+      toast({
+        title: "Transfert NFT détecté",
+        description: `Un NFT ${data.type === 'sent' ? 'envoyé' : 'reçu'} pour le token ID ${data.tokenId}`,
+      });
+    });
+    
+    this.nftListeners.set(address, cleanupFunc);
+    console.log(`NFT transfer listener started for ${address}`);
+  }
+
+  /**
+   * Arrête tous les listeners de transfert de NFT
+   */
+  private stopNFTTransferListeners(): void {
+    this.nftListeners.forEach((cleanup, address) => {
+      cleanup();
+      console.log(`NFT transfer listener stopped for ${address}`);
+    });
+    
+    this.nftListeners.clear();
+  }
+
+  /**
+   * Formate les NFTs pour l'affichage
+   * @param nfts Liste de NFTs bruts
+   * @returns Array - Liste de NFTs formatés
+   */
+  private formatNFTs(nfts: any[]): any[] {
+    return nfts.map((nft: any) => {
+      const metadata = nft.metadata ? JSON.parse(nft.metadata) : {};
+      
+      return {
+        id: `${nft.token_address}-${nft.token_id}`,
+        tokenId: nft.token_id,
+        contractAddress: nft.token_address,
+        name: metadata.name || `NFT #${nft.token_id}`,
+        description: metadata.description || "",
+        image: metadata.image || "",
+        collection: nft.name || "Collection inconnue",
+        symbol: nft.symbol || "",
+        tokenUri: nft.token_uri || "",
+      };
+    });
+  }
+  
+  /**
+   * Récupère la liste des chaînes supportées
+   * @returns Array - Liste des chaînes supportées
+   */
+  public getSupportedChains(): { id: string; name: string }[] {
+    if (!this.moralisContext) return [];
+    return this.moralisContext.getSupportedChains();
+  }
+  
+  /**
+   * Change la chaîne actuellement sélectionnée
+   * @param chainId Identifiant de la chaîne
+   */
+  public setChain(chainId: string): void {
+    this.selectedChain = chainId;
+    console.log(`Chain changed to ${chainId}`);
+    
+    toast({
+      title: "Réseau modifié",
+      description: `Vous utilisez maintenant ${this.getChainName(chainId)}`,
+    });
+  }
+  
+  /**
+   * Récupère le nom d'une chaîne par son ID
+   * @param chainId Identifiant de la chaîne
+   * @returns string - Nom de la chaîne
+   */
+  private getChainName(chainId: string): string {
+    const chains = this.getSupportedChains();
+    const chain = chains.find(c => c.id === chainId);
+    return chain ? chain.name : "Chaîne inconnue";
+  }
+  
+  /**
+   * Récupère la chaîne actuellement sélectionnée
+   * @returns string - ID de la chaîne
+   */
+  public getSelectedChain(): string {
+    return this.selectedChain;
   }
 }
 
