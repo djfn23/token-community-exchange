@@ -1,0 +1,27 @@
+[package]
+name = "tokenchain-runtime"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "master", default-features = false }
+frame-system = { git = "https://github.com/paritytech/substrate.git", branch = "master", default-features = false }
+pallet-community-token = { path = "../pallets/community-token", default-features = false }
+pallet-governance = { path = "../pallets/governance", default-features = false }
+pallet-amm = { path = "../pallets/amm", default-features = false }
+pallet-kyc = { path = "../pallets/kyc", default-features = false }
+sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "master", default-features = false }
+
+[lib]
+name = "tokenchain_runtime"
+path = "lib.rs"
+crate-type = ["rlib"]
+
+[features]
+default = ["std"]
+std = [
+    "frame-support/std",
+    "frame-system/std",
+    "pallet-community-token/std",
+    "sp-std/std"
+]

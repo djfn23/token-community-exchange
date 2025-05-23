@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  node:
+    build:
+      context: ./tokenchain-node
+    image: tokenchain-node:latest
+    container_name: tokenchain-node
+    ports:
+      - "9944:9944"
+      - "9933:9933"
+      - "30333:30333"
+    command: ["./tokenchain-node", "--dev"]
+
+  api:
+    build:
+      context: ./tokenchain-node/api
+    image: tokenchain-api:latest
+    container_name: tokenchain-api
+    ports:
+      - "3001:3001"
+    working_dir: /app
+    command: ["npm", "start"]
+    depends_on:
+      - node
+    environment:
+      - NODE_ENV=production
+      - API_PORT=3001
+
+  frontend:
+    build:
+      context: ./frontend-tokenchain
+    image: tokenchain-frontend:latest
+    container_name: tokenchain-frontend
+    ports:
+      - "3000:3000"
+    working_dir: /app
+    command: ["npm", "run", "dev"]
+    depends_on:
+      - api
+    environment:
+      - NODE_ENV=development

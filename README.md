@@ -1,44 +1,71 @@
-# Welcome to your Lovable project
+# TokenChain – Blockchain Fullstack Community Exchange
 
-## Project info
+## 🚀 Lancement rapide (stack complète)
 
-**URL**: https://lovable.dev/projects/003ef1b8-48d7-4d4f-aa19-0d7996d19247
+```bash
+# À la racine du repository
+# 1. Build & run toute la stack (node Substrate, API REST, front-end)
+docker compose up --build
+```
 
-## How can I edit this code?
+- Le node Substrate écoute sur ws://localhost:9944
+- L’API REST sur http://localhost:3001
+- Le front-end Next.js sur http://localhost:3000
 
-There are several ways of editing your application.
+---
 
-**Use Lovable**
+## 📦 Architecture du repository
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/003ef1b8-48d7-4d4f-aa19-0d7996d19247) and start prompting.
+```
+token-community-exchange/
+│
+├── tokenchain-node/           # Node Substrate Rust (palettes, runtime, tests, Dockerfile)
+│   ├── api/                   # API REST Node.js/Express
+│   ├── examples/js/           # Exemples TypeScript Polkadot.js
+│   └── ...
+├── frontend-tokenchain/       # Front-end Next.js (explorateur, interaction API)
+├── docker-compose.yml         # Stack complète (node + API + front)
+└── README.md                  # Ce fichier
+```
 
-Changes made via Lovable will be committed automatically to this repo.
+---
 
-**Use your preferred IDE**
+## 🧑‍💻 Utilisation manuelle (hors Docker)
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+```bash
+# 1. Lancer le node Substrate
+cd tokenchain-node
+cargo run --release
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+# 2. Lancer l’API REST
+cd tokenchain-node/api
+npm install
+npm start
 
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# 3. Lancer le front-end
+cd frontend-tokenchain
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+---
 
-- Navigate to the desired file(s).
+## 🧪 Tests & CI
+- Build et tests Rust automatisés dans `.github/workflows/ci.yml`
+- Extensible à l’API et au front-end
+
+---
+
+## 📚 Documentation
+- Voir chaque sous-dossier pour la doc technique (palettes, API, front)
+- Exemples d’utilisation dans `tokenchain-node/examples/js/`
+
+---
+
+## 🤝 Contributions & extensions
+- Ajoutez de nouvelles palettes dans `tokenchain-node/pallets/`
+- Étendez l’API ou le front-end selon vos besoins
+- Proposez des PR ou issues pour enrichir la stack
 - Click the "Edit" button (pencil icon) at the top right of the file view.
 - Make your changes and commit the changes.
 

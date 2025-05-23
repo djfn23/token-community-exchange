@@ -1,3 +1,11 @@
+[workspace]
+members = [
+    "pallets/community-token",
+    "pallets/governance",
+    "pallets/amm",
+    "pallets/kyc",
+    "runtime"
+]
 
 [package]
 name = "tokenchain-node"
@@ -7,7 +15,7 @@ authors = ["TokenTrader Team"]
 description = "TokenChain: blockchain communautaire pour TokenTrader, basée sur Substrate."
 
 [dependencies]
-substrate = { version = "4.0.0-dev", optional = true }
+substrate = { git = "https://github.com/paritytech/substrate.git", branch = "master", optional = true }
 serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
 env_logger = "0.10.0"
